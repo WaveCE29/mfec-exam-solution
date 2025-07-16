@@ -16,12 +16,6 @@ Go to the project directory
 cd mfec-exam-solution
 ```
 
-Install dependencies
-
-```bash
-go mod tidy
-```
-
 Run code
 
 ```bash
