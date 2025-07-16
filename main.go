@@ -10,7 +10,9 @@ func isPalindrome(x int) bool {
 	str := strconv.Itoa(x)
 	n := len(str)
 
-	for i := 0; i < n/2; i++ {
+	for i := 0; i < n/2; i++ { // ตรวจสอบตัวอักษรที่ตำแหน่ง i และ n-1-i
+		// ถ้าไม่เท่ากัน แสดงว่าไม่ใช่พาลินโดรม
+		// ถ้าเป็นเลขลบหรือมีเลข 0 ที่ตำแหน่งแรก จะไม่ใช่พาลินโดรม
 		if str[i] != str[n-1-i] {
 			return false
 		}
@@ -20,6 +22,7 @@ func isPalindrome(x int) bool {
 
 // แปลงเลขโรมันเป็นเลขฐาน 10
 func romanToInt(s string) int {
+	// สร้างแผนสำหรับเลขโรมัน
 	roman := map[byte]int{
 		'I': 1, 'V': 5, 'X': 10,
 		'L': 50, 'C': 100, 'D': 500, 'M': 1000,
@@ -55,7 +58,7 @@ func removeDuplicates(input []int) []int {
 func main() {
 	// ทดสอบฟังก์ชัน isPalindrome
 	fmt.Println("== Check Palindrome ==")
-	palindromeInputs := []int{121, -121, 10}
+	palindromeInputs := []int{121, -121, 10, 56965, 12321}
 	for _, input := range palindromeInputs {
 		output := isPalindrome(input)
 		fmt.Printf("Input: %d\nOutput: %t\n================\n", input, output)
