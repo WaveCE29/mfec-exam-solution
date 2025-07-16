@@ -1,0 +1,75 @@
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+// โครงสร้าง Job สำหรับเก็บข้อมูลของแต่ละงานที่ต้องประมวลผล
+type Job struct {
+	ID       int           // หมายเลขงาน
+	Data     string        // ข้อมูลงาน
+	Duration time.Duration // เวลาที่ใช้ในการประมวลผลงาน
+}
+
+// โครงสร้าง Result สำหรับเก็บผลลัพธ์ที่ได้จากการประมวลผล Job
+type Result struct {
+	JobID   int    // หมายเลขงานที่สำเร็จ
+	Message string // ข้อความที่บอกว่าใครประมวลผลงานนั้น
+}
+
+func main() {
+	numWorkers := 3                  // จำนวน worker ที่ใช้ประมวลผลงาน
+	jobs := make(chan Job, 10)       // ช่องส่งงาน (channel) ขนาด 10
+	results := make(chan Result, 10) // ช่องรับผลลัพธ์ (channel) ขนาด 10
+	var wg sync.WaitGroup            // ใช้รอให้ worker ทุกตัวทำงานเสร็จ
+
+	// สร้าง worker ตามจำนวนที่กำหนด
+	for i := 1; i <= numWorkers; i++ {
+		wg.Add(1)                        // เพิ่มตัวนับ WaitGroup สำหรับแต่ละ worker
+		go worker(i, jobs, results, &wg) // เรียก goroutine ของ worker พร้อมรอรับงาน
+	}
+
+	// Goroutine สำหรับรับผลลัพธ์จาก channel results แล้วแสดงผล
+	go func() {
+		for result := range results {
+			fmt.Printf("Result: Job %d completed with message: %s\n",
+				result.JobID, result.Message)
+		}
+	}()
+
+	// สร้างและส่งงาน 10 งานเข้าไปในช่อง jobs
+	for j := 1; j <= 10; j++ {
+		jobs <- Job{
+			ID:       j,
+			Data:     fmt.Sprintf("Data for job %d", j),
+			Duration: time.Duration(j) * 100 * time.Millisecond, // เพิ่มระยะเวลาเรื่อย ๆ
+		}
+		fmt.Printf("Sent job %d to the worker pool\n", j)
+	}
+
+	close(jobs) // ปิด channel jobs เพื่อบอกว่าไม่มีงานใหม่อีกแล้ว
+
+	wg.Wait()      // รอให้ worker ทุกตัวทำงานจนเสร็จ
+	close(results) // ปิด channel ผลลัพธ์เมื่อ worker เสร็จหมดแล้ว
+
+	fmt.Println("All workers completed their jobs")
+	time.Sleep(100 * time.Millisecond) // หน่วงเวลาเล็กน้อยเพื่อให้ผลลัพธ์แสดงครบ
+}
+
+// ฟังก์ชัน worker สำหรับดึงงานจาก jobs แล้วส่งผลลัพธ์กลับผ่าน results
+func worker(id int, jobs <-chan Job, results chan<- Result, wg *sync.WaitGroup) {
+	defer wg.Done() // บอกว่า worker ตัวนี้เสร็จแล้วเมื่อจบฟังก์ชัน
+
+	for job := range jobs {
+		time.Sleep(job.Duration) // จำลองการประมวลผลโดยการหน่วงเวลา
+
+		results <- Result{
+			JobID:   job.ID,
+			Message: fmt.Sprintf("Processed by worker %d - %s", id, job.Data),
+		}
+
+		fmt.Printf("Worker %d finished job %d\n", id, job.ID)
+	}
+}
